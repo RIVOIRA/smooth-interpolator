@@ -62,6 +62,37 @@ class LocalSmoothInterp:
             self.velocities = velocities
             self.accelerations = accelerations
 
+        @staticmethod
+        def compute_taylor_derivatives(
+            samples: "SamplingNodes",
+        ) -> Tuple[np.ndarray, np.ndarray]:
+            dt_s, v_s = samples.finite_diff_velocities()
+            dt_mid = (dt_s[1:] + dt_s[:-1]) / 2.0
+            a_s = np.diff(v_s) / dt_mid
+            a_s = np.append(a_s, a_s[-1])
+            a_s = np.insert(a_s, 0, a_s[0])
+            w = dt_s[1:] / (2.0 * dt_mid)
+            v_mid = (1.0 - w) * v_s[1:] + w * v_s[:-1]
+            v_mid = np.insert(v_mid, 0, v_mid[0] - a_s[0] * dt_s[0])
+            v_mid = np.append(v_mid, v_mid[-1] + a_s[-1] * dt_s[-1])
+            return v_mid, a_s
+
+        @staticmethod
+        def construct(samples: "SamplingNodes"):
+            (
+                v_mid,
+                a_s,
+            ) = LocalSmoothInterp.SamplingDifferentialNodes.compute_taylor_derivatives(
+                samples
+            )
+            differential_nodes = LocalSmoothInterp.SamplingDifferentialNodes(
+                times=samples.times,
+                positions=samples.positions,
+                velocities=v_mid,
+                accelerations=a_s,
+            )
+            return differential_nodes
+
     class UnitIntervalDifferentialNodes(SamplingDifferentialNodes):
         def __init__(
             self,
@@ -255,6 +286,22 @@ class LocalSmoothInterp:
     ) -> np.ndarray:
         LL0, LL1, LL2 = self.layered_interp_split(differential_node, interpolated_times)
         return LL0 + LL1 + LL2
+
+    def layered_interp_taylor_split(
+        self, samples: SamplingNodes, interpolated_times: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        differential_node = LocalSmoothInterp.SamplingDifferentialNodes.construct(
+            samples
+        )
+        return self.layered_interp_split(differential_node, interpolated_times)
+
+    def layered_interp_taylor(
+        self, samples: SamplingNodes, interpolated_times: np.ndarray
+    ) -> np.ndarray:
+        differential_node = LocalSmoothInterp.SamplingDifferentialNodes.construct(
+            samples
+        )
+        return self.layered_interp(differential_node, interpolated_times)
 
     def d2y_to_dy(self, nodes: SamplingNodes, d2y: np.ndarray):
         dt_s, v_s = nodes.finite_diff_velocities()

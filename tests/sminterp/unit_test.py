@@ -130,6 +130,90 @@ class TestLocalSmoothInterpolatorOverTwoIntervals(unittest.TestCase):
         self.assertTrue(is_parabola)
 
 
+class TestSamplingDifferentialNodes(unittest.TestCase):
+    def test_constantness(self):
+        t_s = np.array([0.0, 1.0, 3.0, 5.0, 5.3])
+        x_s = np.ones_like(t_s)
+
+        samples = LocalSmoothInterpolator.LocalSmoothInterp.SamplingNodes(
+            times=t_s, positions=x_s
+        )
+        v, a = LocalSmoothInterpolator.LocalSmoothInterp.SamplingDifferentialNodes.compute_taylor_derivatives(samples)
+        is_zero_v = are_almost_equal(v, np.zeros_like(v))
+        is_zero_a = are_almost_equal(a, np.zeros_like(a))
+        self.assertTrue(is_zero_v and is_zero_a)
+
+    def test_identity(self):
+        t_s = np.array([0.0, 1.0, 3.0, 5.0, 5.3])
+        x_s = t_s
+        samples = LocalSmoothInterpolator.LocalSmoothInterp.SamplingNodes(
+            times=t_s, positions=x_s
+        )
+        v, a = LocalSmoothInterpolator.LocalSmoothInterp.SamplingDifferentialNodes.compute_taylor_derivatives(samples)
+        is_unit_v = are_almost_equal(v, np.ones_like(v))
+        is_zero_a = are_almost_equal(a, np.zeros_like(a))
+        self.assertTrue(is_unit_v and is_zero_a)
+
+    def test_parabola(self):
+        t_s = np.array([0.0, 1.0, 3.0, 5.0, 5.3])
+        x_s = t_s**2
+        samples = LocalSmoothInterpolator.LocalSmoothInterp.SamplingNodes(
+            times=t_s, positions=x_s
+        )
+        v, a = LocalSmoothInterpolator.LocalSmoothInterp.SamplingDifferentialNodes.compute_taylor_derivatives(samples)
+        is_linear_v = are_almost_equal(v, 2.*t_s)
+        is_unit_a = are_almost_equal(a, 2.*np.ones_like(a))
+        self.assertTrue(is_linear_v and is_unit_a)
+
+
+class TestLocalSmoothInterpolatorWithTaylorOverTwoIntervals(unittest.TestCase):
+    def test_constantness(self):
+        interpolator = LocalSmoothInterpolator.LocalSmoothInterp()
+        t_s = np.array([0.0, 1.0, 3.0])
+        x_s = np.array([1.0, 1.0, 1.0])
+        t_i = np.linspace(0.0, 3.0)
+
+        samples = LocalSmoothInterpolator.LocalSmoothInterp.SamplingNodes(
+            times=t_s, positions=x_s
+        )
+        y_i = interpolator.layered_interp_taylor(
+            samples= samples, interpolated_times=t_i
+        )
+        flat_one = np.ones_like(t_i)
+        is_flat = are_almost_equal(y_i, flat_one)
+        self.assertTrue(is_flat)
+
+    def test_identity(self):
+        interpolator = LocalSmoothInterpolator.LocalSmoothInterp()
+        t_s = np.array([0.0, 1.0, 3.0])
+        x_s = t_s
+        t_i = np.linspace(0.0, 3.0)
+
+        samples = LocalSmoothInterpolator.LocalSmoothInterp.SamplingNodes(
+            times=t_s, positions=x_s
+        )
+        y_i = interpolator.layered_interp_taylor(
+            samples=samples, interpolated_times=t_i
+        )
+        is_identity = are_almost_equal(y_i, t_i)
+        self.assertTrue(is_identity)
+
+    def test_parabola(self):
+        interpolator = LocalSmoothInterpolator.LocalSmoothInterp()
+        t_s = np.array([0.0, 1.0, 3.0])
+        x_s = t_s ** 2
+        t_i = np.linspace(0.0, 3.0)
+
+        samples = LocalSmoothInterpolator.LocalSmoothInterp.SamplingNodes(
+            times=t_s, positions=x_s
+        )
+        y_i = interpolator.layered_interp_taylor(
+            samples=samples, interpolated_times=t_i
+        )
+        is_parabola = are_almost_equal(y_i, t_i ** 2)
+        self.assertTrue(is_parabola)
+
+
 class TestSmoothConvexOver3Intervals(unittest.TestCase):
     def test_parabola(self):
         interpolator = ConvexSmooth.SmoothConvexInterpolator()
