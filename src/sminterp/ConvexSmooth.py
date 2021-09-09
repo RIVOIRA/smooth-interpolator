@@ -1,7 +1,7 @@
 import scipy.optimize as scop
 from scipy.sparse import dia_matrix
 
-from src.sminterp.LocalSmoothInterpolator import *
+from .LocalSmoothInterpolator import *
 
 
 class SmoothConvexInterpolator(LocalSmoothInterp):
