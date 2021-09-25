@@ -251,11 +251,13 @@ class SmoothConvexInterpolator(LocalSmoothInterp):
         LL0, LL1, LL2 = self.convex_interp_split(alpha, samples, interpolated_times)
         return LL0 + LL1 + LL2
 
-    def alpha_opt(self, samples: LocalSmoothInterp.SamplingNodes) -> np.ndarray:
+    def alpha_opt(
+        self, samples: LocalSmoothInterp.SamplingNodes
+    ) -> Tuple[np.ndarray, scop.optimize.OptimizeResult]:
         alpha_solver = AlphaSolver(interp=self, samples=samples)
         results = alpha_solver.solve()
         alpha = results.x
-        return alpha
+        return alpha, results
 
     def convex_interp_opt_split(
         self, samples: LocalSmoothInterp.SamplingNodes, interpolated_times: np.ndarray
@@ -269,7 +271,7 @@ class SmoothConvexInterpolator(LocalSmoothInterp):
     def convex_interp_opt(
         self, samples: LocalSmoothInterp.SamplingNodes, interpolated_times: np.ndarray
     ) -> np.ndarray:
-        alpha = self.alpha_opt(samples=samples)
+        alpha, results = self.alpha_opt(samples=samples)
         return self.convex_interp(alpha, samples, interpolated_times)
 
 
@@ -355,9 +357,12 @@ class AlphaSolver:
         jac_val = jac_f(self.objective_func, alpha)
         return jac_val
 
-    def solve(self):
+    def solve(self, _alpha_init=None):
         n_inner_intervals = len(self._samples.times) - 3
-        alpha_init = np.zeros((2 * n_inner_intervals))
+        if _alpha_init is None:
+            alpha_init = np.zeros((2 * n_inner_intervals))
+        else:
+            alpha_init = _alpha_init
         bounds = AlphaSolver.bounds_for_alpha(n_inner_intervals)
         linear_constr = AlphaSolver.linear_constraints(n_inner_intervals)
 
