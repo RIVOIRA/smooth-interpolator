@@ -542,17 +542,19 @@ class IntervalSubdivision:
 
     def u_m_max(self):
         u_m_max = self._left_coordinate.u_max()
-        if self.R_m > 0:
+        if self.R_m > 0.0:
             u_m_max = min(u_m_max, 1.0 / self.R_m)
         return u_m_max
 
     def u_p_max(self):
         u_p_max = self._right_coordinate.u_max()
-        if self.R_p > 0:
+        if self.R_p > 0.0:
             u_p_max = min(u_p_max, 1.0 / self.R_p)
         return u_p_max
 
     def u_p_min(self):
+        if self.R_p <= 0.0:
+            return 0.0
         u_m_max = self.u_m_max()
         u_p_min = (1.0 - self.R_m * u_m_max) / self.R_p
         return u_p_min
@@ -567,6 +569,12 @@ class IntervalSubdivision:
         u_p_max = self.u_p_max()
         if self.is_convexity_condition_met():
             return np.array([u_m_max, u_p_max])
+        if math.isclose(self.R_p, 0.0):
+            u_m = (1.0 - self.R_p * u_p_max) / self.R_m
+            return np.array([u_m, u_p_max])
+        if math.isclose(self.R_m, 0.0):
+            u_p = (1.0 - self.R_m * u_m_max) / self.R_p
+            return np.array([u_m_max, u_p])
         u_p = (1.0 - self.R_m * u_m_max) / self.R_p
         U_m_max = np.array([u_m_max, u_p])
         if self.left_weight() == np.inf:
