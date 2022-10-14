@@ -607,7 +607,7 @@ class IntervalSubdivision:
 
         u_mid = 0.5 * (u_p_max + self.u_p_min())
         sol = scop.root_scalar(
-            f=objective_func, x0=u_mid, fprime=dobjective_func, method="newton"
+            f=objective_func, x0=u_mid, fprime=dobjective_func, method="brentq", bracket=[self.u_p_min(), u_p_max]
         )
         u_p_opt = sol.root
         u_m_opt = (1.0 - self.R_p * u_p_opt) / self.R_m
